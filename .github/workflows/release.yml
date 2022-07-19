@@ -1,0 +1,43 @@
+name: RustRelease
+ 
+on:
+  push:
+    tags: 
+      - '*'
+jobs:
+  release:
+    if: github.event.base_ref == 'refs/heads/release'
+    name: release for ${{ matrix.os }}
+    runs-on:  ${{ matrix.os }}
+    strategy:
+      matrix:
+        name: [
+            linux,
+            windows,
+        ]
+    
+        include:
+          - name: linux
+            os: ubuntu-latest
+            artifact_name: target/release/conventional-commit
+            asset_name: conventional-commit-linux-${{ github.ref_name }}
+          - name: windows
+            os: windows-latest
+            artifact_name: target/release/conventional-commit.exe
+            asset_name: conventional-commit-windows-${{ github.ref_name }}
+
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+            
+      - name: Build for ${{ matrix.os }}
+        run: cargo build --release --locked
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ matrix.artifact_name }}
+          name: ${{ matrix.asset_name }}
+      
