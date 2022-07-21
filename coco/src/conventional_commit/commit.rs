@@ -1,19 +1,5 @@
+use super::CommitType;
 use regex::Regex;
-
-#[derive(Eq, PartialEq, Debug)]
-pub enum CommitType {
-    Fix,
-    Feature,
-    BreakingChange,
-    Build,
-    Chore,
-    Ci,
-    Docs,
-    Style,
-    Refactor,
-    Performance,
-    Test,
-}
 
 #[derive(Eq, PartialEq, Debug)]
 pub struct ConventionalCommit {
@@ -71,10 +57,10 @@ impl ConventionalCommit {
 #[cfg(test)]
 mod tests {
 
-    use crate::utility::commit::{CommitType, ConventionalCommit};
+    use crate::{CommitType, ConventionalCommit};
 
     #[test]
-    fn parse_correct_convcom_is_correct() {
+    fn parse_correct_commit() {
         let commit_string = "feat: allow provided config object to extend other configs";
 
         let commit = ConventionalCommit {
