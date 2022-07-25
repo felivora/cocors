@@ -3,13 +3,13 @@
 use regex::Regex;
 use std::fmt;
 
-use crate::{CommitType, ConventionalCommit};
+use crate::{Commit, CommitType};
 
 /// A representation of a [semantic version](https://semver.org/) with convenience functions
 ///
 /// It represents multiple 'levels' of version differences and compatibility between versions (`major`.`minor`.`patch`-`pre_release`+`metadata`):
 /// - major:
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub struct Version {
     /// Represents breaking change in the public API, every bump in this version will reset the minor and patch fields
     /// to 0. When starting with development and while the public API is still considered unstable the major version
@@ -32,6 +32,32 @@ pub struct Version {
 }
 
 impl Version {
+    /// Convenience function that simply resets every field to its default value
+    ///
+    /// Can be used when incrementing higher version bumps, when all other fields
+    /// need to be reset.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use coco::Version;
+    /// let mut version = Version::parse("1.2.3-alpha+d408340").unwrap();
+    /// let empty = Version::default();
+    /// let initial = Version::parse("0.0.0").unwrap();
+    ///
+    /// version.reset();
+    ///
+    /// assert_eq!(version, empty);
+    /// assert_eq!(version, initial);
+    /// ```
+    pub fn reset(&mut self) {
+        self.major = 0;
+        self.minor = 0;
+        self.patch = 0;
+        self.pre_release = None;
+        self.metadata = None;
+    }
+
     /// Parses a string containing a semantic version, returns a Option<Version>
     ///
     /// The function takes the version string in the follwing format (int.int.int-string)
@@ -95,6 +121,7 @@ impl Version {
 
         // If one of the integral parts of the version is missing
         // return none here already
+        // TODO: Set a specific log message for each point of failure?
         if major.is_none() || minor.is_none() || patch.is_none() {
             return None;
         }
@@ -123,44 +150,6 @@ impl Version {
         }
 
         Some(semver)
-    }
-
-    pub fn bump(&mut self, commit: &ConventionalCommit) {
-        if commit.breaking {
-            self.major += 1;
-            return;
-        }
-
-        match commit.commit_type {
-            CommitType::Fix => self.patch += 1,
-            CommitType::Feature => {
-                self.minor += 1;
-                self.patch = 0;
-            }
-            CommitType::BreakingChange => {
-                self.major += 1;
-                self.minor = 0;
-                self.patch = 0
-            }
-            _ => return,
-        }
-
-        self.pre_release = None;
-        self.metadata = None;
-    }
-
-    pub fn rollback(&mut self, last_commit: &ConventionalCommit) {
-        if last_commit.breaking {
-            self.major -= 1;
-            return;
-        }
-
-        match last_commit.commit_type {
-            CommitType::Fix => self.patch -= 1,
-            CommitType::Feature => self.minor -= 1,
-            CommitType::BreakingChange => self.major -= 1,
-            _ => return,
-        }
     }
 }
 
