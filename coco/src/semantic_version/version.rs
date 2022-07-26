@@ -1,16 +1,16 @@
 #![warn(missing_docs)]
 
 use regex::Regex;
-use std::fmt;
 use std::cmp::Ordering;
+use std::fmt;
 
-use crate::{CommitType, ConventionalCommit};
+use crate::{Commit, CommitType};
 
 /// A representation of a [semantic version](https://semver.org/) with convenience functions
 ///
 /// It represents multiple 'levels' of version differences and compatibility between versions (`major`.`minor`.`patch`-`pre_release`+`metadata`):
 /// - major:
-#[derive(Eq, PartialEq, Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone, Default)]
 pub struct Version {
     /// Represents breaking change in the public API, every bump in this version will reset the minor and patch fields
     /// to 0. When starting with development and while the public API is still considered unstable the major version
@@ -33,6 +33,32 @@ pub struct Version {
 }
 
 impl Version {
+    /// Convenience function that simply resets every field to its default value
+    ///
+    /// Can be used when incrementing higher version bumps, when all other fields
+    /// need to be reset.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use coco::Version;
+    /// let mut version = Version::parse("1.2.3-alpha+d408340").unwrap();
+    /// let empty = Version::default();
+    /// let initial = Version::parse("0.0.0").unwrap();
+    ///
+    /// version.reset();
+    ///
+    /// assert_eq!(version, empty);
+    /// assert_eq!(version, initial);
+    /// ```
+    pub fn reset(&mut self) {
+        self.major = 0;
+        self.minor = 0;
+        self.patch = 0;
+        self.pre_release = None;
+        self.metadata = None;
+    }
+
     /// Parses a string containing a semantic version, returns a Option<Version>
     ///
     /// The function takes the version string in the follwing format (int.int.int-string)
@@ -74,7 +100,7 @@ impl Version {
 
         // return early if the regex did not find anything
         caps_option.as_ref()?;
-        
+
         let caps = caps_option.unwrap();
 
         let major = caps.get(1).map(|m| m.as_str());
@@ -93,6 +119,7 @@ impl Version {
 
         // If one of the integral parts of the version is missing
         // return none here already
+        // TODO: Set a specific log message for each point of failure?
         if major.is_none() || minor.is_none() || patch.is_none() {
             return None;
         }
@@ -122,64 +149,6 @@ impl Version {
 
         Some(semver)
     }
-
-    /// Increments the version according to the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/#specification)
-    ///
-    /// Using the object representation of the [ConventionalCommit] all information for 
-    /// a version update is given in order to bump the version numbers
-    ///
-    /// # Examples
-    ///
-    ///
-    /// ```rust
-    /// # use coco::Version;
-    /// # use coco::ConventionalCommit;
-    /// let mut version = Version::parse("1.2.3").unwrap();
-    /// let commit = ConventionalCommit::parse("feat: Added fancy new feature").unwrap();
-    ///
-    /// let bumped = Version::parse("1.3.0").unwrap();
-    /// version.conventional_bump(&commit);
-    /// 
-    /// assert_eq!(version, bumped);
-    /// ```
-
-    pub fn conventional_bump(&mut self, commit: &ConventionalCommit) {
-        if commit.breaking {
-            self.major += 1;
-            return;
-        }
-
-        match commit.commit_type {
-            CommitType::Fix => self.patch += 1,
-            CommitType::Feature => {
-                self.minor += 1;
-                self.patch = 0;
-            }
-            CommitType::BreakingChange => {
-                self.major += 1;
-                self.minor = 0;
-                self.patch = 0
-            }
-            _ => return,
-        }
-
-        self.pre_release = None;
-        self.metadata = None;
-    }
-
-    pub fn rollback(&mut self, last_commit: &ConventionalCommit) {
-        if last_commit.breaking {
-            self.major -= 1;
-            return;
-        }
-
-        match last_commit.commit_type {
-            CommitType::Fix => self.patch -= 1,
-            CommitType::Feature => self.minor -= 1,
-            CommitType::BreakingChange => self.major -= 1,
-            _ => (),
-        }
-    }
 }
 
 impl fmt::Display for Version {
@@ -200,59 +169,56 @@ impl fmt::Display for Version {
     }
 }
 
-impl Ord for Version{
+impl Ord for Version {
     fn cmp(&self, other: &Self) -> Ordering {
-        
         if self.major != other.major {
-            return self.major.cmp(&other.major)
+            return self.major.cmp(&other.major);
         }
 
         if self.minor != other.minor {
-            return self.minor.cmp(&other.minor)
+            return self.minor.cmp(&other.minor);
         }
 
         if self.patch != other.patch {
-            return self.patch.cmp(&other.patch)
+            return self.patch.cmp(&other.patch);
         }
-        
-        if !(self.pre_release.is_some() && other.pre_release.is_some()){
-           return self.pre_release.cmp(&other.pre_release).reverse()
+
+        if !(self.pre_release.is_some() && other.pre_release.is_some()) {
+            return self.pre_release.cmp(&other.pre_release).reverse();
         }
-       
 
         // Pre Release precedence is calculated as follows:
         // 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 <
         // 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0
         // Option was checked above (returned only if not both are some)
-        // so unwrapping here is fine 
+        // so unwrapping here is fine
         let self_prerelease_clone = self.pre_release.clone().unwrap();
         let mut self_prerelease = self_prerelease_clone.split('.');
         let other_prerelease_clone = other.pre_release.clone().unwrap();
         let mut other_prerelease = other_prerelease_clone.split('.');
-      
+
         loop {
-           let s = self_prerelease.next();
-           let o = other_prerelease.next();
-           
-           if s.is_none() && o.is_none(){
+            let s = self_prerelease.next();
+            let o = other_prerelease.next();
+
+            if s.is_none() && o.is_none() {
                 break;
-           }; 
+            };
 
-           if s.is_none() {
-               return Ordering::Less;
-           }
+            if s.is_none() {
+                return Ordering::Less;
+            }
 
-           if o.is_none() {
-               return Ordering::Greater;
-           }
+            if o.is_none() {
+                return Ordering::Greater;
+            }
 
-           if s.cmp(&o) != Ordering::Equal{
-               return s.cmp(&o)
-           }
+            if s.cmp(&o) != Ordering::Equal {
+                return s.cmp(&o);
+            }
         }
-       
+
         Ordering::Equal
-        
     }
 }
 
@@ -262,13 +228,12 @@ impl PartialOrd for Version {
     }
 }
 
-
 #[cfg(test)]
 mod ordering_test {
 
     use crate::Version;
     use std::cmp::Ordering;
-    
+
     #[test]
     fn major_version_diff() {
         let version_greater = Version::parse("2.2.3").unwrap();
@@ -276,7 +241,7 @@ mod ordering_test {
 
         assert_eq!(version_greater.cmp(&version_less), Ordering::Greater);
     }
-   
+
     #[test]
     fn minor_version_diff() {
         let version_greater = Version::parse("1.3.3").unwrap();
@@ -284,7 +249,7 @@ mod ordering_test {
 
         assert_eq!(version_greater.cmp(&version_less), Ordering::Greater);
     }
- 
+
     #[test]
     fn patch_version_diff() {
         let version_greater = Version::parse("1.2.4").unwrap();
@@ -308,7 +273,7 @@ mod ordering_test {
 
         assert_eq!(version_greater.cmp(&version_less), Ordering::Equal);
     }
-    
+
     #[test]
     fn pre_release_same_amount_alpha_diff() {
         let version_greater = Version::parse("1.2.3-beta").unwrap();
@@ -316,7 +281,7 @@ mod ordering_test {
 
         assert_eq!(version_greater.cmp(&version_less), Ordering::Greater);
     }
-    
+
     #[test]
     fn pre_release_same_amount_numeric_diff() {
         let version_greater = Version::parse("1.2.3-alpha.beta").unwrap();
@@ -348,7 +313,6 @@ mod ordering_test {
 
         assert_eq!(version_greater.cmp(&version_less), Ordering::Greater);
     }
-
 }
 
 #[cfg(test)]

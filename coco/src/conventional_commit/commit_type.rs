@@ -11,4 +11,11 @@ pub enum CommitType {
     Refactor,
     Performance,
     Test,
+    Other,
+}
+
+impl Default for CommitType {
+    fn default() -> Self {
+        CommitType::Other
+    }
 }
