@@ -40,7 +40,6 @@ impl Version {
     /// Version struct representing one semantic version. As defined in the specification all fields
     /// non optional fields MUST be present.
     /// If major, minor or patch fields are not found the return is `None`, the build tag is optional
-    /// When a less strict parsing is required, use the function [`Version::parse_unchecked()`].
     ///
     /// `version` - A string slice that holds a version in the format numeric.numeric.numeric-string
     ///
@@ -126,8 +125,25 @@ impl Version {
 
     /// Increments the version according to the [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/#specification)
     ///
-    /// Using a human readable format
-    pub fn bump(&mut self, commit: &ConventionalCommit) {
+    /// Using the object representation of the [ConventionalCommit] all information for 
+    /// a version update is given in order to bump the version numbers
+    ///
+    /// # Examples
+    ///
+    ///
+    /// ```rust
+    /// # use coco::Version;
+    /// # use coco::ConventionalCommit;
+    /// let mut version = Version::parse("1.2.3").unwrap();
+    /// let commit = ConventionalCommit::parse("feat: Added fancy new feature").unwrap();
+    ///
+    /// let bumped = Version::parse("1.3.0").unwrap();
+    /// version.conventional_bump(&commit);
+    /// 
+    /// assert_eq!(version, bumped);
+    /// ```
+
+    pub fn conventional_bump(&mut self, commit: &ConventionalCommit) {
         if commit.breaking {
             self.major += 1;
             return;

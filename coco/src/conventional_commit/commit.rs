@@ -10,7 +10,7 @@ pub struct ConventionalCommit {
 }
 
 impl ConventionalCommit {
-    pub fn new(commit: &str) -> Option<ConventionalCommit> {
+    pub fn parse(commit: &str) -> Option<ConventionalCommit> {
         let regex = Regex::new(r"([a-z,A-Z]+)(\(([a-z,A-Z]+)\))?(!)?: (.+)?").unwrap();
         let caps_option = regex.captures(commit);
 
@@ -47,7 +47,7 @@ impl ConventionalCommit {
         let commit_type = commit.unwrap();
         Some(ConventionalCommit {
             breaking: caps.get(4).is_some() || commit_type == CommitType::BreakingChange,
-            commit_type: commit_type,
+            commit_type,
             scope: caps.get(3).map(|m| m.as_str().to_owned()),
             description: caps.get(5).map(|m| m.as_str().to_owned()),
         })
@@ -72,6 +72,6 @@ mod tests {
             )),
         };
 
-        assert_eq!(ConventionalCommit::new(commit_string).unwrap(), commit);
+        assert_eq!(ConventionalCommit::parse(commit_string).unwrap(), commit);
     }
 }
