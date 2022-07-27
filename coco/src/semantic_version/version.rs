@@ -66,7 +66,6 @@ impl Version {
     /// Version struct representing one semantic version. As defined in the specification all fields
     /// non optional fields MUST be present.
     /// If major, minor or patch fields are not found the return is `None`, the build tag is optional
-    /// When a less strict parsing is required, use the function [`Version::parse_unchecked()`].
     ///
     /// `version` - A string slice that holds a version in the format numeric.numeric.numeric-string
     ///

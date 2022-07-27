@@ -39,16 +39,16 @@ impl Commit {
         }
         let caps_option = COMMIT_RE.captures(commit);
 
-        this_target = "commit_parser";
+        let this_target = "commit_parser";
 
-        debug!(target: this_target, "Starting the commit parsing")
+        debug!(target: this_target, "Starting the commit parsing");
 
         // return early if the regex did not find anything
         // TODO: Add specific log message for each failure point for
         //      later usage in linter
         if caps_option.is_none() {
             error!(target: this_target, "Commit message could not be tokenized, make sure that mandatory fields type and description are included in the message. 
-            Format: type: description")
+            Format: type: description");
             return None;
         }
 
@@ -78,15 +78,18 @@ impl Commit {
         };
         let commit_type = commit.unwrap();
 
-        if caps.get(5).is_none {
-            eprintln!
+        if caps.get(5).is_none() {
+            unimplemented!();
         }
+
+        let description = caps.get(5).unwrap().as_str().to_string();
 
         Some(Commit {
             breaking: caps.get(4).is_some() || commit_type == CommitType::BreakingChange,
-            commit_type: commit_type,
+            commit_type,
             scope: caps.get(3).map(|m| m.as_str().to_owned()),
-            description: caps.get(5).map(|m| m.as_str().to_owned()),
+            description,
+            raw_type: todo!()
         })
     }
 
@@ -133,6 +136,7 @@ mod tests {
             scope: None,
             description: String::from("allow provided config object to extend other configs"),
         };
+
 
         assert_eq!(Commit::parse(commit_string).unwrap(), commit);
     }
