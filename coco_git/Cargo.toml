@@ -1,11 +1,14 @@
 [package]
-name = "cocors_git"
+name = "coco_git"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-chrono = "0.4"
-quick-error = "2.0.1"
+regex= "1.6.0"
+lazy_static = "1.4.0"
 log = "0.4.17"
+
+[dev-dependencies]
+dirs="4.0.0"
