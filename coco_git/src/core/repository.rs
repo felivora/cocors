@@ -1,3 +1,4 @@
+use dunce;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -5,7 +6,7 @@ use std::process::Command;
 use super::{git, utility};
 
 pub struct Repository {
-    path: PathBuf,
+    path: String,
 }
 
 impl Repository {
@@ -14,24 +15,51 @@ impl Repository {
     /// If the provided path is not in a repository, there is no access to the path or git is not installed
     /// an [io::Error] will be returned detailling the issue
     pub fn new(path: &Path) -> Result<Repository, io::Error> {
-        let repo_root = Self::repo_root(path)?;
+        let mut s = Self::repo_root(path)?;
 
-        Ok(Repository { path: repo_root })
+        while s.ends_with('\n') || s.ends_with('\r') {
+            s.pop();
+        }
+        Ok(Repository { path: s })
     }
 
     pub fn log(&self, from: &str, to: &str, format: &str) -> io::Result<String> {
-        if !Self.is_repository(self.path)? {
-            return Err(io::Error::new(io::ErrorKind::InvalidInput, "Given path is not a repository, must be a valid filesystem path within to a repositor root"));
+        //if !Self::is_repository(&self.path)? {
+        //    println!(" is no Repo");
+        //    return Err(io::Error::new(io::ErrorKind::InvalidInput, "Given path is not a repository, must be a valid filesystem path within to a repository root"));
+        //}
+        let mut cmd = Command::new("git");
+
+        let mut range = from.to_string();
+
+        if !to.is_empty() {
+            range.push_str(format!("..{}", to).as_str());
         }
 
-        let mut cmd = Command::new("git");
         cmd.arg("log");
 
-        
+        if !range.is_empty() {
+            println!("{}", &range);
+            cmd.arg(range);
+        }
 
-        git log release..main --format="%h»¦«%cn»¦«%ce»¦«%ct»¦«%s»¦«%b"  
+        if !format.is_empty() {
+            cmd.arg(format!("--format={}", format));
+        }
+        cmd.current_dir(&self.path);
+        let output = cmd.output()?;
+
+        if output.status.success() {
+            return Ok(String::from_utf8_lossy(&output.stdout).into_owned());
+        }
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "git log command failed with error; {}",
+                String::from_utf8_lossy(&output.stderr).into_owned()
+            ),
+        ));
     }
-
 
     /// Checks wether or not the given path (file or directory) is in a repository
     ///
@@ -64,14 +92,15 @@ impl Repository {
     /// Returns the root path for a repository, which is an ancestor of the given path
     ///
     /// The path can be either a file or directory, but must be a descendant of a repository
-    pub fn repo_root(path: &Path) -> Result<PathBuf, io::Error> {
-        if !Self::is_repository(path)? {
+    pub fn repo_root(path: &Path) -> Result<String, io::Error> {
+        let cannon_path = utility::normalize_pathname(path)?;
+        if !Self::is_repository(Path::new(&cannon_path))? {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "Given path is not a repository, therefore root can not be determined",
             ));
         }
-        let cannon_path = utility::normalize_pathname(path)?;
+
         let mut cmd = Command::new("git");
         cmd.arg("rev-parse")
             .arg("--show-toplevel")
@@ -95,14 +124,16 @@ impl Repository {
 
         return match String::from_utf8(output.stdout) {
             Ok(p) => {
-                println!("{}", p);
-                Ok(PathBuf::from(p))
-            },
-            Err(e) => Err(io::Error::new(
+                return Ok(p);
+            }
+            ,
+            Err(e) => {
+                Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 format!("Returned data in stdout contained non-UTF8 characters which is not supported, {}",
                 e),
-            )),
+            ))
+            }
         };
     }
 }
@@ -110,7 +141,7 @@ impl Repository {
 #[cfg(test)]
 mod parse_test {
 
-    use crate::core::Repository;
+    use crate::core::{utility, Repository};
     use dirs;
     use std::path::PathBuf;
 
@@ -125,5 +156,19 @@ mod parse_test {
     fn check_if_manifest_dir_is_repo() {
         let home_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         assert!(Repository::is_repository(&home_path.as_path()).unwrap());
+    }
+
+    #[test]
+    fn check_if_manifest_dir_returns_history() {
+        let manifest_path = PathBuf::from(r"C:\Users\z003yw7n\Desktop\MISC\LearnGit\LearnGitRepo");
+        let root = utility::normalize_pathname(&manifest_path).unwrap();
+        println!("{}", root);
+        let repo = Repository::new(&manifest_path).unwrap();
+        println!("{}", repo.path.display());
+        let log = repo.log("", "", "%h»¦«%cn»¦«%ce»¦«%ct»¦«%s»¦«%b").unwrap();
+
+        println!("{}", log);
+
+        assert!(!log.is_empty());
     }
 }
