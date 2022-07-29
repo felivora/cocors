@@ -2,6 +2,7 @@ use dunce;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::str::Lines;
 
 use super::{git, utility};
 
@@ -24,10 +25,6 @@ impl Repository {
     }
 
     pub fn log(&self, from: &str, to: &str, format: &str) -> io::Result<String> {
-        //if !Self::is_repository(&self.path)? {
-        //    println!(" is no Repo");
-        //    return Err(io::Error::new(io::ErrorKind::InvalidInput, "Given path is not a repository, must be a valid filesystem path within to a repository root"));
-        //}
         let mut cmd = Command::new("git");
 
         let mut range = from.to_string();
@@ -51,6 +48,61 @@ impl Repository {
 
         if output.status.success() {
             return Ok(String::from_utf8_lossy(&output.stdout).into_owned());
+        }
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "git log command failed with error; {}",
+                String::from_utf8_lossy(&output.stderr).into_owned()
+            ),
+        ));
+    }
+
+    /// Queries all tags in the repository and returns them sorted in alphanumerical order [Ord for str](https://doc.rust-lang.org/std/cmp/trait.Ord.html#impl-Ord-15)
+    ///
+    /// Fails if the path in the Repository is not actually a repository
+    pub fn tags(&self) -> io::Result<Vec<String>> {
+        let mut cmd = Command::new("git");
+
+        cmd.arg("tag");
+        cmd.current_dir(&self.path);
+
+        let output = cmd.output()?;
+
+        if output.status.success() {
+            let tags_raw = String::from_utf8_lossy(&output.stdout).into_owned();
+            if tags_raw.is_empty() {
+                return Ok(Vec::<String>::new());
+            }
+            let mut tags = tags_raw
+                .split_whitespace()
+                .map(|t| String::from(t.trim_end()))
+                .collect::<Vec<String>>();
+
+            tags.sort_unstable();
+            return Ok(tags);
+        }
+        return Err(io::Error::new(
+            io::ErrorKind::Other,
+            format!(
+                "git log command failed with error; {}",
+                String::from_utf8_lossy(&output.stderr).into_owned()
+            ),
+        ));
+    }
+
+    pub fn latest_tag(&self) -> io::Result<String> {
+        let mut cmd = Command::new("git");
+
+        cmd.arg("describe");
+        cmd.current_dir(&self.path);
+
+        let output = cmd.output()?;
+
+        if output.status.success() {
+            let s = String::from_utf8_lossy(&output.stdout).into_owned();
+
+            return Ok(s.trim_end().to_string());
         }
         return Err(io::Error::new(
             io::ErrorKind::Other,

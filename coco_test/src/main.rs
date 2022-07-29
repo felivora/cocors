@@ -8,9 +8,19 @@ fn main() {
 
     let repo = Repository::new(Path::new(path)).unwrap();
 
-    println!(
-        "{}",
-        repo.log("main", "refactoring_krueger", "%h»¦«%cn»¦«%ce»¦«%ct»¦«%s»¦«%b")
-            .unwrap()
-    );
+    for tag in repo.tags().unwrap() {
+        println!("{}", tag);
+    }
+
+    for commit in repo
+        .log(
+            "HEAD",
+            repo.latest_tag().unwrap().as_str(),
+            "%h»¦«%cn»¦«%ce»¦«%ct»¦«%s»¦«%b",
+        )
+        .unwrap()
+        .lines()
+    {
+        println!("{}", commit);
+    }
 }
