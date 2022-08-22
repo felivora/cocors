@@ -1,8 +1,8 @@
 use super::CommitType;
 use crate::Version;
 use lazy_static::lazy_static;
+use log::{debug, error, info, warn};
 use regex::Regex;
-use log::{info, error, warn, debug};
 
 /// Represents a commit message according to the
 /// [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/#specification)
@@ -35,7 +35,7 @@ impl Commit {
     pub fn parse(commit: &str) -> Option<Commit> {
         lazy_static! {
             static ref COMMIT_RE: Regex =
-                Regex::new(r"([a-z,A-Z]+)?(\(([a-z,A-Z]+)\))?(!)?: (.+)(\n\n(.|\n)*)?").unwrap();
+                Regex::new(r"([a-z,A-Z]+)?(\(([a-z,A-Z]+)\))?(!)?: (.+)(\n\n(?:.|\n)*)?").unwrap();
         }
         let caps_option = COMMIT_RE.captures(commit);
 
@@ -69,6 +69,7 @@ impl Commit {
                 "test" => Some(CommitType::Test),
                 "ci" => Some(CommitType::Ci),
                 "other" => Some(CommitType::Other),
+                _ => Some(CommitType::Other),
             },
         };
 
@@ -78,9 +79,7 @@ impl Commit {
         };
         let commit_type = commit.unwrap();
 
-        if caps.get(5).is_none() {
-            unimplemented!();
-        }
+        if caps.get(5).is_none() {}
 
         let description = caps.get(5).unwrap().as_str().to_string();
 
@@ -89,7 +88,7 @@ impl Commit {
             commit_type,
             scope: caps.get(3).map(|m| m.as_str().to_owned()),
             description,
-            raw_type: todo!()
+            raw_type: todo!(),
         })
     }
 
@@ -119,6 +118,10 @@ impl Commit {
         version.pre_release = None;
         version.metadata = None;
     }
+
+    pub fn lint(commit: &str) -> String {
+        todo!()
+    }
 }
 
 #[cfg(test)]
@@ -134,9 +137,9 @@ mod tests {
             breaking: false,
             commit_type: CommitType::Feature,
             scope: None,
+            raw_type: None,
             description: String::from("allow provided config object to extend other configs"),
         };
-
 
         assert_eq!(Commit::parse(commit_string).unwrap(), commit);
     }
