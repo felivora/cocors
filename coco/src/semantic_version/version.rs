@@ -4,7 +4,7 @@ use regex::Regex;
 use std::cmp::Ordering;
 use std::fmt;
 
-use crate::{Commit, CommitType};
+
 
 /// A representation of a [semantic version](https://semver.org/) with convenience functions
 ///

@@ -1,7 +1,7 @@
 use super::CommitType;
 use crate::Version;
 use lazy_static::lazy_static;
-use log::{debug, error, info, warn};
+use log::{debug, error};
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -82,19 +82,17 @@ impl Commit {
         };
         let commit_type = commit.unwrap();
 
-        if caps.get(5).is_none() {
-            return None;
-        }
+        caps.get(5)?;
 
         let header = caps.get(5).unwrap().as_str().to_string();
 
-        let mut description = if caps.get(6).is_none() {
+        let description = if caps.get(6).is_none() {
             None
         } else {
             Some(caps.get(6).unwrap().as_str().trim().to_string())
         };
 
-        let footer = if description.is_some() {
+        if description.is_some() {
             lazy_static! {
                 static ref COMMIT_RE: Regex = Regex::new(r"(.*)(?:: )(.*)").unwrap();
             };
@@ -139,7 +137,7 @@ impl Commit {
         version.metadata = None;
     }
 
-    pub fn lint(commit: &str) -> String {
+    pub fn lint(_commit: &str) -> String {
         todo!()
     }
 }
