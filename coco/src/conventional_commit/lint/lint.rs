@@ -58,7 +58,7 @@ Refs: #123"#;
             description: None,
         };
 
-        assert_eq!(format!("{lint}"), "");
+        assert_eq!(format!("{lint}"), "Error on:\n");
     }
 
     #[test]
@@ -66,6 +66,6 @@ Refs: #123"#;
         let commit = "0123456i9876543210 1234567";
 
         let lint = Lint::get_source(commit, 7).unwrap();
-        assert_eq!(format!("{lint}"), "0123456i9876543210");
+        assert_eq!(format!("{lint}"), "0123456i987654321");
     }
 }

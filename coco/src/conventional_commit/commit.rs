@@ -3,6 +3,7 @@ use crate::Version;
 use lazy_static::lazy_static;
 use log::{debug, error, info, warn};
 use regex::Regex;
+use std::collections::HashMap;
 
 /// Represents a commit message according to the
 /// [conventional commit specification](https://www.conventionalcommits.org/en/v1.0.0/#specification)
@@ -19,7 +20,9 @@ pub struct Commit {
     /// Optional scope, that defines where the changes in the code happened (e.g. parser)
     pub scope: Option<String>,
     /// A short string summarizing the changes in the commit
-    pub description: String,
+    pub header: String,
+    pub description: Option<String>,
+    pub footer: Option<HashMap<String, String>>,
     /// Stores the string of the type if the type is [CommitType::Other] as otherwise there
     /// would be no way to get the type for changelog
     raw_type: Option<String>,
@@ -79,15 +82,32 @@ impl Commit {
         };
         let commit_type = commit.unwrap();
 
-        if caps.get(5).is_none() {}
+        if caps.get(5).is_none() {
+            return None;
+        }
 
-        let description = caps.get(5).unwrap().as_str().to_string();
+        let header = caps.get(5).unwrap().as_str().to_string();
+
+        let mut description = if caps.get(6).is_none() {
+            None
+        } else {
+            Some(caps.get(6).unwrap().as_str().trim().to_string())
+        };
+
+        let footer = if description.is_some() {
+            lazy_static! {
+                static ref COMMIT_RE: Regex = Regex::new(r"(.*)(?:: )(.*)").unwrap();
+            };
+            todo!();
+        };
 
         Some(Commit {
             breaking: caps.get(4).is_some() || commit_type == CommitType::BreakingChange,
             commit_type,
             scope: caps.get(3).map(|m| m.as_str().to_owned()),
+            header,
             description,
+            footer: None,
             raw_type: todo!(),
         })
     }
@@ -138,7 +158,9 @@ mod tests {
             commit_type: CommitType::Feature,
             scope: None,
             raw_type: None,
-            description: String::from("allow provided config object to extend other configs"),
+            header: String::from("allow provided config object to extend other configs"),
+            description: None,
+            footer: None,
         };
 
         assert_eq!(Commit::parse(commit_string).unwrap(), commit);
