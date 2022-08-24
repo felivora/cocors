@@ -1,16 +1,11 @@
-mod utility;
 mod adapter;
+mod utility;
 use std::path::PathBuf;
 
 use clap::Parser;
 
-use utility::{
-    fs_helper::read_manifest, sem_version::Version,
-    yml_util::find_version,
-};
-use adapter::{apax_adapter::set_apax_version};
-
-use crate::utility::commit::ConventionalCommit;
+use adapter::apax_adapter::set_apax_version;
+use utility::{fs_helper::read_manifest, sem_version::Version, yml_util::find_version};
 
 /// Simple program to automatically apply semantic versioning based on the conventional commits specification
 #[derive(Parser, Debug, Clone)]

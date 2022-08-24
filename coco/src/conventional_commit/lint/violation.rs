@@ -1,31 +1,36 @@
 use crate::conventional_commit::lint::Level;
-
+use std::cmp::Ordering;
 use std::fmt;
-#[derive(Debug, Clone)]
+#[derive(Eq, PartialEq, Debug, Clone)]
 pub struct Violation {
-    pub source: String,
     pub level: Level,
-    pub location: u32,
     pub message: String,
     pub description: Option<String>,
 }
 
-impl Violation {
-    pub fn get_source(raw_source: &str, location: usize) -> Option<String> {
-        let start = if location < 10 { 0 } else { location - 1 };
-        let end = if raw_source.len() - location < 10 {
-            raw_source.len()
-        } else {
-            location + 10
-        };
-
-        raw_source.get(start..end).map(|v| v.to_string())
+impl fmt::Display for Violation {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}: {}{}",
+            self.level,
+            self.message,
+            self.description
+                .as_ref()
+                .map_or_else(String::new, |d| { format!("\n\t{}", d) })
+        )
     }
 }
 
-impl fmt::Display for Violation {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "{:?} on:", self.level)
+impl Ord for Violation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.level.cmp(&other.level)
+    }
+}
+
+impl PartialOrd for Violation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
@@ -36,33 +41,24 @@ mod format_test {
 
     #[test]
     fn test_format() {
-        let commit = r#"fix: prevent racing of requests
-
-Introduce a request id and a reference to latest request. Dismiss
-incoming responses other than from latest request.
-
-Remove timeouts which were used to mitigate the racing issue but are
-obsolete now.
-
-Reviewed-by: Z
-Refs: #123"#;
-
         let lint = Violation {
-            source: commit.to_string(),
             level: Level::Error,
-            location: 10,
             message: String::from("Something happened"),
             description: None,
         };
 
-        assert_eq!(format!("{lint}"), "Error on:\n");
+        assert_eq!(format!("{lint}"), "❌ Error: Something happened");
     }
-
     #[test]
-    fn test_source() {
-        let commit = "0123456i9876543210 1234567";
+    fn test_format_description() {
+        let lint = Violation {
+            level: Level::Error,
+            message: String::from("Something happened"),
+            description: Some(String::from(
+                "This is an error and should not happen! Make sure you do it right next time",
+            )),
+        };
 
-        let lint = Violation::get_source(commit, 7).unwrap();
-        assert_eq!(format!("{lint}"), "0123456i987654321");
+        assert_eq!(format!("{lint}"), "❌ Error: Something happened\n\tThis is an error and should not happen! Make sure you do it right next time");
     }
 }

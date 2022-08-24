@@ -12,6 +12,7 @@ exitcode = "1.1.2"
 regex = "1"
 serde = "1.0"
 serde_yaml = "0.8"
+coco = { path = "coco" }
 
 [dev-dependencies]
 assert_cmd = "2.0.4"

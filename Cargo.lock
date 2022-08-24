@@ -119,12 +119,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "coco"
+version = "0.1.0"
+dependencies = [
+ "lazy_static",
+ "log",
+ "regex",
+]
+
+[[package]]
 name = "cocors"
 version = "0.1.0"
 dependencies = [
  "assert_cmd",
  "assert_fs",
  "clap",
+ "coco",
  "exitcode",
  "regex",
  "serde",
