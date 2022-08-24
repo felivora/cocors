@@ -36,7 +36,7 @@ impl Commit {
     /// specification, if the commit message does not conform `None` will
     /// be returned.
     pub fn parse(commit: &str) -> Option<Commit> {
-        todo!()
+        Commit::lint(commit).commit
     }
 
     /// Bumps the given version according to the commit message
