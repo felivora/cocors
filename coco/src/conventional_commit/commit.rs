@@ -74,7 +74,7 @@ impl Commit {
 
         lazy_static! {
             static ref COMMIT_RE: Regex =
-                Regex::new(r"([a-z,A-Z]+)?(\((.+)?\))?(!)?(?>: )(.+)?(\n\n(?:.|\n)*)?").unwrap();
+                Regex::new(r"([a-z,A-Z]+)?(\((.+)?\))?(!)?(?:: )(.+)?(\n\n(?:.|\n)*)?").unwrap();
         }
         let caps_option = COMMIT_RE.captures(commit);
 

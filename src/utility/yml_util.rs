@@ -1,8 +1,6 @@
-
-
 use regex::Regex;
 
-use super::sem_version::Version;
+use coco::Version;
 
 pub fn find_version(manifest: &str) -> Option<Version> {
     let version = Regex::new(r"version: (\d+\.\d+\.\d+(-.+)?)").unwrap();
@@ -21,7 +19,8 @@ pub fn find_version(manifest: &str) -> Option<Version> {
 #[cfg(test)]
 mod tests {
 
-    use crate::utility::{sem_version::Version, yml_util::find_version};
+    use crate::utility::yml_util::find_version;
+    use coco::Version;
 
     #[test]
     fn parse_correct_semver_is_correct() {
@@ -32,7 +31,8 @@ mod tests {
             major: 10,
             minor: 9,
             patch: 756,
-            build: Some(String::from("demo").to_string()),
+            pre_release: Some(String::from("demo").to_string()),
+            metadata: None,
         };
 
         assert_eq!(semver_result.unwrap(), semver);
@@ -55,7 +55,8 @@ mod tests {
             major: 0,
             minor: 4,
             patch: 1,
-            build: None,
+            pre_release: None,
+            metadata: None,
         };
 
         assert_eq!(semver_result.unwrap(), semver);

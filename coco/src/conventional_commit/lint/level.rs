@@ -1,5 +1,6 @@
+use clap::ValueEnum;
 use std::fmt;
-#[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Clone)]
+#[derive(PartialOrd, Ord, PartialEq, Eq, Debug, Clone, Copy, ValueEnum)]
 pub enum Level {
     Error,
     Warning,
@@ -10,10 +11,10 @@ pub enum Level {
 impl fmt::Display for Level {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Level::Error => write!(f, "❌ Error"),
-            Level::Warning => write!(f, "⚠️ Warning"),
-            Level::Info => write!(f, "ℹ️ Info"),
-            Level::Suggestion => write!(f, "💡 Suggestion"),
+            Level::Error => write!(f, "❌ "),
+            Level::Warning => write!(f, "⚠️ "),
+            Level::Info => write!(f, "ℹ️ "),
+            Level::Suggestion => write!(f, "💡 "),
         }
     }
 }
