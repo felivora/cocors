@@ -1,10 +1,8 @@
-mod utility;
-
 mod cli;
 
 use clap::Parser;
 
-use log::{error, LevelFilter};
+use log::LevelFilter;
 use simplelog::{ColorChoice, Config, TermLogger, TerminalMode};
 
 /// Simple program to automatically apply semantic versioning based on the conventional commits specification
@@ -26,7 +24,8 @@ fn main() {
         Config::default(),
         TerminalMode::Mixed,
         ColorChoice::Auto,
-    );
+    )
+    .unwrap();
 
     match args.command {
         cli::commands::Commands::Lint(args) => {

@@ -2,7 +2,7 @@ use super::lint::{Level, LintResult, Violation};
 use super::CommitType;
 use crate::Version;
 use lazy_static::lazy_static;
-use log::{debug, error};
+use log::trace;
 use regex::Regex;
 use std::collections::HashMap;
 
@@ -82,6 +82,7 @@ impl Commit {
         // TODO: Add specific log message for each failure point for
         //      later usage in linter
         if caps_option.is_none() {
+            trace!("Regex did not find any matches for commit message");
             res.lints.push(Violation {
                 level: Level::Error,
                 message: String::from("The format of the commit message is not conformant to conventional commit specification"),
@@ -95,6 +96,7 @@ impl Commit {
             return res;
         }
 
+        trace!("Regex did find matches for commit message");
         let caps = caps_option.unwrap();
 
         let commit_type = get_commit_type(&mut res, &caps);
@@ -172,7 +174,7 @@ fn get_commit_scope(result: &mut LintResult, caps: &regex::Captures) -> Option<S
             });
             None
         }
-        Some(s) => {
+        Some(_) => {
             if caps.get(3).is_none() {
                 result.lints.push(Violation {
                 level: Level::Error,
@@ -207,12 +209,10 @@ fn get_commit_body_footer(result: &mut LintResult, caps: &regex::Captures) -> Co
     if caps.get(6).is_none() {
         return res;
     }
-    let mut body = match caps.get(6) {
+    let body = match caps.get(6) {
         None => return res,
         Some(m) => m.as_str().to_string(),
     };
-
-    body.trim();
 
     lazy_static! {
         static ref BODY_FOOTER_RE: Regex = Regex::new(r"(.*)(?>: )(.*)").unwrap();

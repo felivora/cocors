@@ -17,7 +17,7 @@ impl fmt::Display for Violation {
             self.message,
             self.description
                 .as_ref()
-                .map_or_else(String::new, |d| { format!("\n\t{}", d) })
+                .map_or_else(String::new, |d| { format!("\n\t\t     {}", d) })
         )
     }
 }

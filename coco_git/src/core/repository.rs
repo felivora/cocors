@@ -1,8 +1,6 @@
-use dunce;
 use std::io;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
-use std::str::Lines;
 
 use super::{git, utility};
 
@@ -24,7 +22,13 @@ impl Repository {
         Ok(Repository { path: s })
     }
 
-    pub fn log(&self, from: &str, to: &str, format: &str) -> io::Result<String> {
+    pub fn log(
+        &self,
+        from: &str,
+        to: &str,
+        format: &str,
+        amount: Option<usize>,
+    ) -> io::Result<String> {
         let mut cmd = Command::new("git");
 
         let mut range = from.to_string();
@@ -36,13 +40,17 @@ impl Repository {
         cmd.arg("log");
 
         if !range.is_empty() {
-            println!("{}", &range);
             cmd.arg(range);
         }
 
         if !format.is_empty() {
             cmd.arg(format!("--format={}", format));
         }
+
+        if amount.is_some() {
+            cmd.arg(format!("-{}", amount.unwrap()));
+        };
+
         cmd.current_dir(&self.path);
         let output = cmd.output()?;
 

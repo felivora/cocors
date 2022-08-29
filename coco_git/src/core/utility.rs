@@ -1,5 +1,4 @@
 use dunce;
-use log::debug;
 use std::{io, path::Path};
 
 pub fn normalize_pathname(path: &Path) -> Result<String, io::Error> {
@@ -12,7 +11,7 @@ pub fn normalize_pathname(path: &Path) -> Result<String, io::Error> {
         }
     }
     // Should not panic as the check if the directory exists is already done above
-    let mut cannon_path = match dunce::canonicalize(dir_path).unwrap().to_str() {
+    let cannon_path = match dunce::canonicalize(dir_path).unwrap().to_str() {
             Some(s) => s.to_string(),
             None => return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
